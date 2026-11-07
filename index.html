@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Laptop Lab: 3D laptop customizer and hardware simulator</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:dark;--bg:#101217;--p:rgba(26,30,39,.68);--ln:rgba(255,255,255,.1);--tx:#e8ebf0;--mu:#8f98a8;--bl:#4da3ff;--ok:#5fd39a;--wr:#ffb454;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*,*:before,*:after{box-sizing:inherit}
+html{scroll-behavior:smooth;scroll-padding-top:64px;height:100%}
+body{margin:0;background:radial-gradient(ellipse at 70% -10%,#1b2434,#101217 60%);color:var(--tx);font:400 15px/1.55 Archivo,system-ui,sans-serif}
+header{position:sticky;top:0;z-index:20;display:flex;justify-content:space-between;align-items:center;padding:14px 5vw;background:rgba(16,18,23,.8);backdrop-filter:blur(14px);border-bottom:1px solid var(--ln)}
+.logo{font-weight:800;letter-spacing:-.02em;font-size:18px}
+nav a{color:var(--mu);text-decoration:none;margin-left:22px}nav a:hover{color:var(--tx)}
+.hero{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);align-items:center;gap:2vw;padding:3vw 5vw 1vw}
+h1{font-size:clamp(38px,5.4vw,76px);line-height:.98;letter-spacing:-.035em;font-weight:800;margin:0 0 18px}
+h2{font-size:clamp(26px,3vw,40px);letter-spacing:-.025em;margin:0 0 6px}
+h3{margin:0 0 8px;font-size:18px}
+p{margin:0 0 12px}.mu{color:var(--mu)}
+.cta{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+.cta button{padding:12px 22px;font-size:16px}
+.hv,.stage{position:relative;overflow:hidden;border-radius:18px}
+.hv{height:min(62vh,540px)}
+.hero-laptop{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:2}.hv canvas{opacity:0}.hv .ld{z-index:3}
+canvas{display:block;width:100%;height:100%}
+.stage canvas{touch-action:none;cursor:grab}
+button{font:inherit;color:var(--tx);background:rgba(255,255,255,.07);border:1px solid var(--ln);border-radius:10px;padding:8px 14px;cursor:pointer;transition:background .15s,border-color .15s}
+button:hover:not(:disabled){background:rgba(77,163,255,.16);border-color:var(--bl)}
+button:disabled{opacity:.5;cursor:not-allowed}
+button.pri{background:var(--bl);color:#06121f;font-weight:600;border-color:var(--bl)}
+button.pri:hover:not(:disabled){background:#78bbff}
+button[aria-pressed=true]{background:rgba(77,163,255,.24);border-color:var(--bl)}
+:focus-visible{outline:2px solid var(--bl);outline-offset:2px}
+.wrap{padding:4vw 5vw 1vw}
+.studio{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:16px;margin-top:16px}
+.stage{height:640px;background:radial-gradient(ellipse at 50% 40%,#1c2230,#0d0f14 72%);border:1px solid var(--ln)}
+.studio-visual{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;pointer-events:none;filter:contrast(1.03) saturate(1.03)}
+.tb{position:absolute;left:12px;right:12px;top:12px;z-index:5;display:flex;flex-wrap:wrap;gap:6px;padding:8px;background:var(--p);backdrop-filter:blur(14px);border:1px solid var(--ln);border-radius:14px;align-items:center}
+.tb button{padding:6px 10px;font-size:13px}
+.tb i{width:1px;height:22px;background:var(--ln)}
+.tb label{font-size:13px;color:var(--mu);display:flex;align-items:center;gap:6px}
+.tb input{accent-color:var(--bl);width:90px}
+.glass{background:var(--p);backdrop-filter:blur(14px);border:1px solid var(--ln);border-radius:14px;padding:16px;margin-bottom:12px}
+.ld{position:absolute;inset:0;display:grid;place-items:center;color:var(--mu);background:rgba(13,15,20,.7);transition:opacity .4s}
+.ld.off{opacity:0;pointer-events:none}.ld.err{color:var(--wr);padding:24px;text-align:center}
+.tag{display:inline-block;font-size:12px;padding:2px 9px;border-radius:99px;border:1px solid;margin-bottom:8px}
+.tag.rem{color:var(--ok)}.tag.sol{color:var(--wr)}.tag.fix{color:var(--mu)}
+.spec{font-weight:600;font-size:16px}
+.opts button{display:block;width:100%;text-align:left;margin:6px 0}
+.opts select{width:100%;padding:9px 10px;color:var(--tx);background:#1c222d;border:1px solid var(--ln);border-radius:8px;font:inherit;margin:5px 0 12px}.photo-readout{position:absolute;right:16px;bottom:16px;z-index:4;max-width:290px;padding:10px 13px;border:1px solid rgba(98,185,255,.6);border-radius:8px;background:rgba(5,12,20,.76);color:#dbeeff;font-size:12px;box-shadow:0 0 28px rgba(53,150,255,.18)}.photo-readout b{display:block;font-size:13px;color:#72baff}
+.opts small,.plist small{display:block;color:var(--wr);font-size:12px;font-weight:400}
+.plist{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.plist button{text-align:left;padding:7px 10px;font-size:13px}
+.plist small{color:var(--mu)}
+dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:14px}dt{color:var(--mu)}dd{margin:0}
+.row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.tw{overflow-x:auto}
+.tbl{width:100%;border-collapse:collapse;min-width:560px}
+.tbl td,.tbl th{padding:11px 12px;border-bottom:1px solid var(--ln);text-align:left;vertical-align:top}.tbl th{color:var(--mu);font-weight:600}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin-top:14px}
+.cards .glass{margin:0}
+footer{padding:4vw 5vw;color:var(--mu);font-size:13px}
+@media(max-width:900px){.hero,.studio{grid-template-columns:1fr}.stage{height:500px}nav a{margin-left:14px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style></head><body>
+<header><span class="logo">Laptop Lab</span><nav><a href="#studio">Studio</a><a href="#compare">Compare</a><a href="#builds">Builds</a></nav></header>
+
+<section class="hero">
+ <div><h1>Take the laptop apart. Put it back better.</h1>
+ <p class="mu" style="max-width:46ch;font-size:17px">Open the lid, lift out the RAM, swap the SSD, and see which parts are soldered for good. Every part is its own 3D object.</p>
+ <div class="cta"><button class="pri" id="bStart">Start building</button><button id="bExp">Explore hardware</button></div></div>
+ <div class="hv"><canvas id="hc"></canvas><img class="hero-laptop" src="assets/laptop-exterior-v1.png" alt="Photorealistic graphite Laptop Lab performance laptop"><div class="ld" id="hl">Loading 3D engine…</div></div>
+</section>
+
+<section class="wrap" id="studio">
+ <h2>3D laptop studio</h2>
+ <p class="mu">Drag to rotate, scroll to zoom, click a part to inspect it. Switch to the internal view to reach the hardware under the keyboard.</p>
+ <div class="studio">
+  <div class="stage"><canvas id="sc" aria-label="Interactive 3D laptop"></canvas><img id="studioVisual" class="studio-visual" src="assets/laptop-internals-v1.png" alt="Photorealistic laptop hardware view"><div class="photo-readout" id="liveTag"><b>LIVE PLATFORM</b>Intel Core i5-13500H · RTX 4050 · DDR5</div><div class="ld" id="sl">Loading 3D engine…</div>
+   <div class="tb">
+    <button id="tLid">Close lid</button><label>Lid <input id="lid" type="range" min="0" max="110" value="105" aria-label="Lid angle"></label><i></i>
+    <button id="tView" aria-pressed="false">Internal view</button><button id="tExp" aria-pressed="false">Exploded view</button><i></i>
+    <button data-v="f">Front</button><button data-v="t">Top</button><button data-v="s">Side</button><button data-v="r">Rear</button><button data-v="x">Reset</button><i></i>
+    <button id="zi" aria-label="Zoom in">+</button><button id="zo" aria-label="Zoom out">−</button>
+   </div></div>
+  <aside><div class="glass" id="panel"></div>
+   <div class="glass"><h3>Your build</h3><dl id="cfgbox"></dl><p class="mu" style="margin:12px 0 0;font-size:12px">Compatibility rules here are simplified for the simulation.</p>
+    <div class="row"><button class="pri" id="bSave">Save build</button><button id="bReset">Reset build</button></div></div>
+   <div class="glass"><h3>Platform configuration</h3><p class="mu" style="font-size:13px">Changing a processor represents a compatible motherboard platform change. In the real teardown it remains under the heat spreader and is not user-removable.</p><div class="opts" id="platform"></div></div>
+   <div class="glass"><h3>Parts</h3><div class="plist" id="plist"></div></div></aside>
+ </div>
+</section>
+
+<section class="wrap" id="compare">
+ <h2>Hardware comparison</h2>
+ <p class="mu">Typical ranges for common laptop storage. Real parts vary by model.</p>
+ <div class="tw glass"><table class="tbl"><tr><th></th><th>NVMe SSD</th><th>SATA SSD</th><th>2.5″ HDD</th></tr>
+ <tr><td>Sequential speed</td><td>2,000–7,000 MB/s</td><td>about 500 MB/s</td><td>80–160 MB/s</td></tr>
+ <tr><td>Random access</td><td>Fastest</td><td>Fast</td><td>Slow (moving heads)</td></tr>
+ <tr><td>Shock and noise</td><td>No moving parts</td><td>No moving parts</td><td>Fragile when moving, audible</td></tr>
+ <tr><td>Cost per terabyte</td><td>Medium</td><td>Medium</td><td>Lowest</td></tr>
+ <tr><td>Best for</td><td>System drive, games, editing</td><td>Older laptops</td><td>Cheap bulk storage</td></tr></table></div>
+</section>
+
+<section class="wrap" id="builds">
+ <h2>Recent configurations</h2>
+ <p class="mu">Save a build in the studio and it appears here. Load any card to rebuild it in 3D.</p>
+ <div class="cards" id="cards"></div>
+</section>
+
+<footer>Laptop Lab is a simulation. Specifications, compatibility rules and any estimates are simplified illustrations, not benchmark results or manufacturer data.</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+const $=s=>document.querySelector(s),clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+function fail(el,m){el.textContent=m;el.className='ld err'}
+const GB=v=>v>=1000?v/1000+' TB':v+' GB';
+const WIFI=['Wi-Fi 5 AC 9260','Wi-Fi 6 AX200','Wi-Fi 6E AX210','Wi-Fi 7 BE200'];
+const COOL=['Single fan, 2 heat pipes','Dual fan, 4 heat pipes','Vapor chamber, dual fan'];
+const DEF={cpu:'Intel Core i5-13500H',gpu:'NVIDIA RTX 4050 6GB',ram:16,ssd:512,hdd:1000,bat:70,wifi:1,cool:1,disp:'QHD 165 Hz'};
+let cfg={...DEF};
+const CPU=['Intel Core i3-1315U','Intel Core i5-13500H','Intel Core i7-13700H','Intel Core i9-13900H','AMD Ryzen 5 7640HS','AMD Ryzen 7 7840HS','AMD Ryzen 9 7940HS'];
+const GPU=['Intel UHD (integrated)','AMD Radeon 780M (integrated)','NVIDIA RTX 4050 6GB','NVIDIA RTX 4060 8GB','NVIDIA RTX 4070 8GB'];
+const OPT={
+ ram:{v:[8,16,32,64],l:v=>v+' GB DDR5-5200'},
+ ssd:{v:[256,512,1000,2000],l:v=>GB(v)+' NVMe SSD'},
+ hdd:{v:[0,500,1000,2000],l:v=>v?GB(v)+' 2.5″ HDD, 5400 rpm':'Leave the bay empty'},
+ bat:{v:[45,60,70,80,99],l:v=>v+' Wh Li-ion'},
+ wifi:{v:[0,1,2,3],l:v=>WIFI[v]},
+ cool:{v:[0,1,2],l:v=>COOL[v]}};
+const KEY={ram:'ram',ssd:'ssd',hdd:'hdd',battery:'bat',wifi:'wifi',fan:'cool'};
+const dedicated=()=>/RTX|GTX|RX /.test(cfg.gpu);
+function block(k,v){
+ if(k==='bat'&&v>=99&&cfg.hdd>0)return 'A 99 Wh pack needs the 2.5″ bay. Empty the HDD bay first.';
+ if(k==='hdd'&&v>0&&cfg.bat>=99)return 'The 2.5″ bay is taken by the 99 Wh battery.';
+ if(k==='cool'&&v===0&&dedicated())return 'A single fan can’t cool a dedicated GPU.';
+ return ''}
+const I={
+ chassis:['Chassis','fix','Aluminium base, side walls and hinge mounts. It decides which parts physically fit.',()=>'2 SODIMM slots · 1 M.2 SSD slot · 1 × 2.5″ bay'],
+ display:['Display panel and lid','fix','The panel is a build option. Swapping it needs a matching eDP connector, so it is a service repair.',()=>cfg.disp],
+ keyboard:['Keyboard and palm rest','fix','Riveted to the top case on most laptops. Replacing it is a technician job.',()=>'Chiclet keyboard'],
+ trackpad:['Trackpad','fix','Ribbon-connected under the palm rest.',()=>'Glass precision trackpad'],
+ mobo:['Motherboard','fix','Carries the soldered CPU and GPU and every slot. Replacing it replaces the laptop.',()=>'DDR5 SODIMM × 2 · M.2 NVMe × 1 · M.2 Wi-Fi × 1'],
+ cpu:['CPU','sol','Soldered (BGA) to the motherboard. It can’t be removed or upgraded, so choose it in the builder before you buy.',()=>cfg.cpu],
+ gpu:['GPU','sol','Soldered to the motherboard and tuned to this cooling module. Dedicated graphics can’t be added later.',()=>cfg.gpu],
+ ram:['RAM','rem','Two SODIMM slots. Release the clips, tilt the stick up and slide it out.',()=>cfg.ram+' GB DDR5-5200 · '+(cfg.ram>=16?'2 × '+cfg.ram/2:'1 × '+cfg.ram)+' GB'],
+ ssd:['SSD','rem','M.2 NVMe drive held by one screw. Clone or reinstall your system after a swap.',()=>GB(cfg.ssd)+' NVMe SSD'],
+ hdd:['HDD','rem','Optional 2.5″ drive in its own bay for cheap bulk storage.',()=>cfg.hdd?GB(cfg.hdd)+' 2.5″ HDD':'Bay empty'],
+ battery:['Battery','rem','Internal Li-ion pack on a connector and a few screws. Larger packs take more space.',()=>cfg.bat+' Wh Li-ion'],
+ wifi:['Wi-Fi card','rem','M.2 card with two antenna leads. Pop the leads off, remove one screw, lift it out.',()=>WIFI[cfg.wifi]],
+ fan:['Cooling fan','rem','The fan and heat pipes are one module. Replacing it changes thermal headroom.',()=>COOL[cfg.cool]],
+ heatpipes:['Heat pipes','fix','Copper pipes carry heat from the CPU and GPU to the fan. Replaced together with the fan module.',()=>COOL[cfg.cool]],
+ speakers:['Speakers','fix','Two drivers in the front corners, wired to the motherboard.',()=>'Stereo pair'],
+ ports:['Ports','fix','Soldered to the motherboard or a small daughter board.',()=>'USB-C · USB-A · HDMI · audio']};
+const ORDER=['display','keyboard','trackpad','chassis','mobo','cpu','gpu','ram','ssd','hdd','battery','wifi','fan','heatpipes','speakers','ports'];
+const KIND={rem:'Removable and upgradeable',sol:'Soldered, not upgradeable',fix:'Fixed assembly'};
+
+function screenTex(){
+ const c=document.createElement('canvas');c.width=640;c.height=400;const x=c.getContext('2d');
+ const g=x.createLinearGradient(0,0,640,400);g.addColorStop(0,'#0b1a30');g.addColorStop(1,'#16365f');x.fillStyle=g;x.fillRect(0,0,640,400);
+ const r=x.createRadialGradient(480,120,10,480,120,260);r.addColorStop(0,'rgba(77,163,255,.55)');r.addColorStop(1,'rgba(77,163,255,0)');x.fillStyle=r;x.fillRect(0,0,640,400);
+ x.fillStyle='#e8ebf0';x.font='800 44px Archivo,system-ui,sans-serif';x.fillText('Laptop Lab',48,330);
+ x.fillStyle='#8fb7e8';x.font='400 20px Archivo,system-ui,sans-serif';x.fillText('Simulated display',50,362);
+ return new THREE.CanvasTexture(c)}
+
+function build(){
+ const root=new THREE.Group(),C={},rot=[],V=(x,y,z)=>new THREE.Vector3(x,y,z);
+ const M=(c,m,r)=>new THREE.MeshStandardMaterial({color:c,metalness:m,roughness:r});
+ const si=M(0xc3c8d0,.45,.42),dk=M(0x1c1f26,.4,.55),pcb=M(0x0e4a36,.2,.6),cu=M(0xc9793a,.9,.28),bk=M(0x08090b,.3,.7),gd=M(0xd8b04a,.9,.3),gr=M(0x8a909b,.8,.35),bl=M(0x1a4d8c,.3,.5),bt=M(0x2a3547,.4,.55),kk=M(0x15171c,.2,.6),rm=M(0x1f5f3f,.2,.6),wf=M(0x6b2a4f,.2,.6);
+ const B=(w,h,d,m,x=0,y=0,z=0)=>{const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);return o};
+ const Y=(r,h,m,x,y,z,rz)=>{const o=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,28),m);o.position.set(x,y,z);if(rz)o.rotation.z=rz;return o};
+ const add=(id,h,ex,kids)=>{const g=new THREE.Group();g.position.copy(h);g.userData={id,home:h.clone(),ex,rem:0,remT:0,removed:false};kids.forEach(k=>g.add(k));root.add(g);C[id]=g;return g};
+ add('chassis',V(0,0,0),V(0,0,0),[B(6,.06,4,si,0,-.12,0),B(.06,.28,4,si,-3,0,0),B(.06,.28,4,si,3,0,0),B(6,.28,.06,si,0,0,2),B(6,.28,.06,si,0,0,-2)]);
+ add('ports',V(0,0,0),V(0,.7,0),[B(.1,.09,.28,bk,-3.03,0,-1),B(.1,.09,.28,bk,-3.03,0,-.4),B(.1,.09,.28,bk,-3.03,0,.2),B(.1,.07,.4,bk,3.03,0,-.4),B(.1,.09,.28,bk,3.03,0,.3)]);
+ add('mobo',V(0,-.06,-.5),V(0,.9,0),[B(5.2,.03,2.5,pcb),B(1.3,.05,.3,dk,-1.6,.03,.7)]);
+ add('cpu',V(-1,-.02,-1),V(0,1.5,0),[B(.55,.06,.55,gr),B(.3,.01,.3,dk,0,.035,0)]);
+ add('gpu',V(.2,-.02,-1),V(0,1.5,0),[B(.8,.06,.8,dk),B(.42,.012,.42,gd,0,.036,0)]);
+ add('heatpipes',V(.35,.075,-1),V(0,2.1,0),[Y(.05,3.1,cu,0,0,-.13,Math.PI/2),Y(.05,3.1,cu,0,0,.13,Math.PI/2)]);
+ const fr=new THREE.Group();for(let i=0;i<9;i++){const a=i*Math.PI*2/9,m=B(.3,.015,.09,gr,Math.cos(a)*.28,.055,Math.sin(a)*.28);m.rotation.y=-a;fr.add(m)}
+ rot.push(fr);add('fan',V(2,0,-1),V(0,1.9,0),[Y(.52,.1,dk,0,0,0),Y(.1,.12,gr,0,.02,0),fr]);
+ const st=y=>{const g=new THREE.Group();g.position.y=y;g.add(B(1.2,.025,.28,rm),B(.2,.02,.16,bk,-.35,.02,0),B(.2,.02,.16,bk,0,.02,0),B(.2,.02,.16,bk,.35,.02,0),B(.9,.027,.03,gd,0,0,.14));return g};
+ const s2=st(.06),ram=add('ram',V(-1.6,0,.2),V(0,1.3,0),[st(0),s2]);ram.userData.s2=s2;
+ add('ssd',V(-.2,-.01,.3),V(0,1.2,0),[B(.9,.022,.26,bl),B(.25,.02,.2,bk,-.12,.02,0),B(.25,.02,.2,bk,.2,.02,0)]);
+ add('hdd',V(1.7,0,.35),V(0,.4,0),[B(1.1,.1,.8,gr),B(.9,.005,.5,dk,0,.052,0)]);
+ add('battery',V(0,-.03,1.4),V(0,.45,0),[B(3.8,.12,.85,bt),B(1.4,.005,.3,si,0,.063,0)]);
+ add('wifi',V(-.5,-.01,-.35),V(0,1.4,0),[B(.4,.02,.34,wf),B(.14,.02,.12,bk,0,.02,0),B(.3,.022,.03,gd,0,0,.17)]);
+ add('speakers',V(0,0,0),V(0,.5,0),[Y(.24,.07,dk,-2.5,-.02,1.35),Y(.24,.07,dk,2.5,-.02,1.35),Y(.15,.08,bk,-2.5,-.02,1.35),Y(.15,.08,bk,2.5,-.02,1.35)]);
+ const kg=new THREE.BoxGeometry(.33,.05,.3),keys=[];
+ for(let r=0;r<5;r++)for(let c=0;c<14;c++){const k=new THREE.Mesh(kg,kk);k.position.set(-2.47+c*.38,.045,-1.35+r*.36);keys.push(k)}
+ add('keyboard',V(0,.17,0),V(0,3,0),[B(6,.05,4,si),...keys]);
+ add('trackpad',V(0,.2,1.25),V(0,3.4,.4),[B(1.9,.012,1,gr)]);
+ const scr=new THREE.Mesh(new THREE.PlaneGeometry(5.6,3.5),new THREE.MeshBasicMaterial({map:screenTex()}));scr.rotation.x=Math.PI/2;scr.position.set(0,-.012,1.95);
+ add('display',V(0,.25,-1.97),V(0,1.8,-1),[B(6,.06,3.9,si,0,.03,1.95),scr,Y(.07,4.2,gr,0,.03,0,Math.PI/2)]);
+ const internalsTexture=new THREE.TextureLoader().load('assets/laptop-internals-v1.png');
+ internalsTexture.encoding=THREE.sRGBEncoding;
+ const photo=new THREE.Mesh(new THREE.PlaneGeometry(5.92,3.95),new THREE.MeshBasicMaterial({map:internalsTexture}));
+ photo.rotation.x=-Math.PI/2;photo.position.set(0,.012,0);photo.visible=false;root.add(photo);
+ return {root,C,rot,photo}}
+
+function stage(cv,ld){
+ let r;try{r=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true})}catch(e){fail(ld,'The 3D view could not start. Turn on hardware acceleration or try another browser.');return null}
+ r.setPixelRatio(Math.min(devicePixelRatio||1,2));
+ const sc=new THREE.Scene(),cam=new THREE.PerspectiveCamera(35,1,.1,100),L=build();
+ sc.add(new THREE.HemisphereLight(0xdde8ff,0x20242c,.95));
+ const a=new THREE.DirectionalLight(0xffffff,.85);a.position.set(4,8,5);sc.add(a);
+ const b=new THREE.DirectionalLight(0x4da3ff,.7);b.position.set(-6,3,-5);sc.add(b);
+ const g=new THREE.GridHelper(18,36,0x2c3d5c,0x1a2231);g.position.y=-.14;sc.add(g,L.root);
+ const o={r,sc,cam,L,on:true};
+ const rs=()=>{const w=cv.clientWidth,h=cv.clientHeight;if(!w||!h)return;r.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix()};
+ new ResizeObserver(rs).observe(cv);rs();
+ new IntersectionObserver(e=>{o.on=e[0].isIntersecting}).observe(cv);
+ ld.classList.add('off');return o}
+const place=(c,s)=>{c.position.set(Math.sin(s.ph)*Math.sin(s.th)*s.rd,.5+Math.cos(s.ph)*s.rd,Math.sin(s.ph)*Math.cos(s.th)*s.rd);c.lookAt(0,.5,0)};
+const still=matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+let H=null,T=null;
+try{
+ if(typeof THREE==='undefined')throw 0;
+ H=stage($('#hc'),$('#hl'));T=stage($('#sc'),$('#sl'));
+}catch(e){fail($('#hl'),'The 3D engine failed to load. Check your connection and reload.');fail($('#sl'),'The 3D engine failed to load. Check your connection and reload.')}
+
+const S={th:.6,ph:1.1,rd:10,tth:.6,tph:1.1,trd:10,sel:null,inn:true,e:0,et:0,lid:1.83,lidT:1.83};
+let builds=[];
+const SAMPLES=[
+ {name:'Student starter (sample)',cfg:{...DEF,cpu:'Intel Core i3-1315U',gpu:'Intel UHD (integrated)',ram:8,ssd:256,hdd:0,bat:60,cool:0,disp:'FHD 60 Hz'}},
+ {name:'Creator rig (sample)',cfg:{...DEF,cpu:'Intel Core i9-13900H',gpu:'NVIDIA RTX 4070 8GB',ram:32,ssd:1000,hdd:0,bat:80,wifi:2,cool:2,disp:'4K 60 Hz'}}];
+
+function renderCfg(){
+ const rows=[['Processor',cfg.cpu],['Graphics',cfg.gpu],['Memory',cfg.ram+' GB DDR5'],['Storage',GB(cfg.ssd)+' SSD'+(cfg.hdd?' + '+GB(cfg.hdd)+' HDD':'')],['Battery',cfg.bat+' Wh'],['Wi-Fi',WIFI[cfg.wifi]],['Cooling',COOL[cfg.cool]],['Display',cfg.disp]];
+ $('#cfgbox').innerHTML=rows.map(r=>`<dt>${r[0]}</dt><dd>${r[1]}</dd>`).join('');
+ $('#liveTag').innerHTML='<b>LIVE PLATFORM · ESTIMATED CONFIGURATION</b>'+cfg.cpu+' · '+cfg.gpu+' · '+cfg.ram+' GB DDR5';
+ renderPlatform()}
+function renderPlatform(){
+ $('#platform').innerHTML='<label for="cpuPick">Processor</label><select id="cpuPick">'+CPU.map(v=>`<option ${v===cfg.cpu?'selected':''}>${v}</option>`).join('')+'</select><label for="gpuPick">Graphics</label><select id="gpuPick">'+GPU.map(v=>`<option ${v===cfg.gpu?'selected':''}>${v}</option>`).join('')+'<small>Platform changes update the active configuration and the live studio readout. CPU and GPU packages are soldered beneath the cooling system.</small>'}
+function renderCards(){
+ const all=[...builds,...SAMPLES];
+ $('#cards').innerHTML=all.map((b,i)=>`<div class="glass"><h3>${b.name}</h3><p class="mu">${b.cfg.ram} GB RAM · ${GB(b.cfg.ssd)} SSD${b.cfg.hdd?' + HDD':''}<br>${b.cfg.gpu}</p><button data-load="${i}">Load in studio</button></div>`).join('')}
+function renderList(){
+ $('#plist').innerHTML=ORDER.map(id=>{const i=I[id],e=id==='hdd'&&!cfg.hdd;return `<button data-id="${id}" aria-pressed="${S.sel===id}">${i[0]}<small>${e?'Empty bay':KIND[i[1]].split(' ')[0]}</small></button>`}).join('')}
+function panel(){
+ const p=$('#panel');
+ if(!S.sel){p.innerHTML='<h3>Select a part</h3><p class="mu">Click a part in the 3D view or choose one from the list below. Each one is a separate object you can inspect.</p>';return}
+ const id=S.sel,[nm,kind,tx,sp]=I[id],u=T.L.C[id].userData;
+ let h=`<h3>${nm}</h3><span class="tag ${kind}">${KIND[kind]}</span><p class="spec">${sp()}</p><p class="mu">${tx}</p>`;
+ if(kind==='rem'){
+  const k=KEY[id],o=OPT[k],empty=id==='hdd'&&cfg.hdd===0;
+  if(!u.removed&&!empty)h+='<button class="pri" data-a="rm">Remove component</button>';
+  else{
+   h+='<p class="mu">The slot is empty. Choose a replacement:</p><div class="opts">'+o.v.map(v=>{const b=block(k,v);return `<button data-a="ins" data-v="${v}" ${b?'disabled':''}>${o.l(v)}${b?'<small>'+b+'</small>':''}${!b&&v===cfg[k]&&!empty?'<small style="color:var(--mu)">Same as before</small>':''}</button>`}).join('')+'</div>';
+   if(!empty)h+='<button data-a="back">Reinstall original</button>'}}
+ p.innerHTML=h}
+
+if(T){
+ const C=T.L.C,cv=$('#sc'),bh=new THREE.BoxHelper(C.ram,0x4da3ff);bh.visible=false;T.sc.add(bh);
+ const RV=new THREE.Vector3(0,1.3,.4);
+ const updateStudioVisual=()=>{const im=$('#studioVisual');im.src=S.et?'assets/laptop-exploded-v1.png':S.inn?'assets/laptop-internals-v1.png':'assets/laptop-exterior-v1.png';im.alt=S.et?'Photorealistic exploded laptop components':S.inn?'Photorealistic laptop internal hardware':'Photorealistic open Laptop Lab laptop'};
+ const setInn=b=>{S.inn=b;$('#tView').textContent=b?'Exterior view':'Internal view';$('#tView').setAttribute('aria-pressed',b);updateStudioVisual()};
+ const setExp=b=>{S.et=b?1:0;$('#tExp').textContent=b?'Assemble':'Exploded view';$('#tExp').setAttribute('aria-pressed',b);updateStudioVisual()};
+ const setLid=a=>{S.lidT=a;$('#lid').value=Math.round(a*180/Math.PI);$('#tLid').textContent=a>.2?'Close lid':'Open lid'};
+ const goView=(t,p,r)=>{S.tth=S.th+Math.atan2(Math.sin(t-S.th),Math.cos(t-S.th));S.tph=p;S.trd=r};
+ function apply(){
+  C.ram.userData.s2.visible=cfg.ram>=16;
+  C.hdd.visible=cfg.hdd>0;
+  const sy=.7+(cfg.bat-45)/54*.6;C.battery.scale.y=sy;C.battery.userData.home.y=-.09+.06*sy;
+  renderCfg();renderList();panel()}
+ function select(id,list){
+  S.sel=id;
+  if(id&&list&&!S.e&&!S.et){
+   const deck=id==='keyboard'||id==='trackpad',top=['display','chassis','ports'].includes(id);
+   if(!deck&&!top&&!S.inn)setInn(true);
+   if(deck&&S.inn)setInn(false)}
+  if(id)bh.setFromObject(C[id]);
+  renderList();panel()}
+ const rc=new THREE.Raycaster(),mv=new THREE.Vector2();
+ function pick(e){
+  const b=cv.getBoundingClientRect();mv.set((e.clientX-b.left)/b.width*2-1,-((e.clientY-b.top)/b.height*2-1));
+  rc.setFromCamera(mv,T.cam);const ms=[];
+  Object.values(C).forEach(g=>g.traverseVisible(o=>{if(o.isMesh)ms.push(o)}));
+  const ph=T.L.photo.visible?rc.intersectObject(T.L.photo,false)[0]:null;
+  if(ph){const u=ph.uv.x,v=ph.uv.y;let id=null;
+   if(v>.60&&u<.38)id='ram';else if(v>.48&&v<.67&&u<.34)id='ssd';else if(u>.54&&v>.16&&v<.62)id='battery';else if(u>.72&&v>.56)id='hdd';else if(u<.18&&v>.42&&v<.62)id='wifi';else if(v>.64&&u>.28&&u<.62)id='mobo';else if(v>.55&&u>.22&&u<.54)id='cpu';else if(v>.72&&u>.28&&u<.72)id='fan';else id='chassis';select(id);return}
+  const h=rc.intersectObjects(ms,false)[0];
+  if(h){let o=h.object;while(o&&!o.userData.id)o=o.parent;select(o.userData.id)}else select(null)}
+ let dn=null;
+ cv.addEventListener('pointerdown',e=>{dn={px:e.clientX,py:e.clientY,m:0};cv.setPointerCapture(e.pointerId);cv.style.cursor='grabbing'});
+ cv.addEventListener('pointermove',e=>{if(!dn)return;const dx=e.clientX-dn.px,dy=e.clientY-dn.py;dn.px=e.clientX;dn.py=e.clientY;dn.m+=Math.abs(dx)+Math.abs(dy);S.tth-=dx*.008;S.tph=clamp(S.tph-dy*.006,.1,1.52)});
+ cv.addEventListener('pointerup',e=>{cv.style.cursor='grab';if(dn&&dn.m<5)pick(e);dn=null});
+ cv.addEventListener('wheel',e=>{e.preventDefault();S.trd=clamp(S.trd*(1+e.deltaY*.001),4,16)},{passive:false});
+ $('#zi').onclick=()=>S.trd=clamp(S.trd*.85,4,16);$('#zo').onclick=()=>S.trd=clamp(S.trd*1.18,4,16);
+ const VW={f:[0,1.25,9],t:[0,.12,10],s:[-Math.PI/2,1.45,9.5],r:[Math.PI,1.3,9],x:[.6,1.1,10]};
+ document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>goView(...VW[b.dataset.v]));
+ $('#tLid').onclick=()=>setLid(S.lidT>.2?0:1.83);
+ $('#lid').oninput=e=>setLid(e.target.value*Math.PI/180);
+ $('#tView').onclick=()=>setInn(!S.inn);
+ $('#tExp').onclick=()=>setExp(!S.et);
+ $('#plist').onclick=e=>{const b=e.target.closest('[data-id]');if(b)select(b.dataset.id,true)};
+ $('#panel').onclick=e=>{
+  const b=e.target.closest('[data-a]');if(!b||!S.sel)return;
+  const id=S.sel,g=C[id],u=g.userData,k=KEY[id],a=b.dataset.a;
+  if(a==='rm'){if(!S.e&&!S.et)setInn(true);u.removed=true;u.remT=1}
+  else if(a==='back'){u.removed=false;u.remT=0}
+  else if(a==='ins'){const v=Number(b.dataset.v),was=u.removed||!g.visible;cfg[k]=v;u.removed=false;
+   if(was){u.rem=1;if(v===0)u.rem=0}u.remT=0;if(!g.visible&&v>0)g.visible=true}
+  apply();bh.setFromObject(g)};
+ $('#bSave').onclick=()=>{builds.unshift({name:'Build '+(builds.length+1),cfg:{...cfg}});renderCards()};
+ $('#platform').onchange=e=>{if(e.target.id==='cpuPick')cfg.cpu=e.target.value;if(e.target.id==='gpuPick')cfg.gpu=e.target.value;if(!dedicated()&&cfg.cool>0)cfg.cool=0;apply();select('cpu')};
+ $('#bReset').onclick=()=>{cfg={...DEF};Object.values(C).forEach(g=>{g.userData.removed=false;g.userData.remT=0});apply()};
+ $('#cards').onclick=e=>{const b=e.target.closest('[data-load]');if(!b)return;
+  cfg={...[...builds,...SAMPLES][b.dataset.load].cfg};Object.values(C).forEach(g=>{g.userData.removed=false;g.userData.remT=0});apply();
+  $('#studio').scrollIntoView()};
+ const go=()=>$('#studio').scrollIntoView();
+ $('#bStart').onclick=()=>{go();setExp(false);select('ram',true)};
+ $('#bExp').onclick=()=>{go();setInn(true);setExp(true)};
+ setInn(true);setLid(1.83);apply();
+ T.step=()=>{
+  S.th+=(S.tth-S.th)*.12;S.ph+=(S.tph-S.ph)*.12;S.rd+=(S.trd-S.rd)*.12;place(T.cam,S);
+  S.e+=(S.et-S.e)*.08;S.lid+=(S.lidT-S.lid)*.1;
+  Object.values(C).forEach(g=>{const u=g.userData;u.rem+=(u.remT-u.rem)*.12;
+   g.position.set(u.home.x+u.ex.x*S.e+RV.x*u.rem,u.home.y+u.ex.y*S.e+RV.y*u.rem,u.home.z+u.ex.z*S.e+RV.z*u.rem)});
+  C.display.rotation.x=-S.lid;
+  T.L.root.visible=false;T.L.photo.visible=false;
+  const photoMode=S.inn&&!S.e;
+  T.L.photo.visible=photoMode;
+  ['ports','mobo','cpu','gpu','ram','ssd','hdd','battery','wifi','fan','heatpipes','speakers'].forEach(id=>C[id].visible=!photoMode);
+  C.keyboard.visible=C.trackpad.visible=!S.inn;
+  bh.visible=false}}
+else{$('#panel').textContent='The 3D studio is unavailable in this browser.'}
+renderCards();
+
+let hl=still?1.83:0;
+(function loop(t){
+ requestAnimationFrame(loop);
+ if(H&&H.on){hl+=((t>500||still?1.83:0)-hl)*.04;H.L.C.display.rotation.x=-hl;
+  H.L.root.rotation.y=still?-.3:Math.sin(t/2800)*.5-.3;H.L.rot.forEach(r=>r.rotation.y+=.05);
+  place(H.cam,{th:.35,ph:1.1,rd:11.5});H.r.render(H.sc,H.cam)}
+ if(T&&T.on){T.step();T.L.rot.forEach(r=>r.rotation.y+=.05);T.r.render(T.sc,T.cam)}
+})(0);
+})();
+</script>
+</body></html>
