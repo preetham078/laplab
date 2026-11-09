@@ -33,7 +33,7 @@ button[aria-pressed=true]{background:rgba(77,163,255,.24);border-color:var(--bl)
 .wrap{padding:4vw 5vw 1vw}
 .studio{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:16px;margin-top:16px}
 .stage{height:640px;background:radial-gradient(ellipse at 50% 40%,#1c2230,#0d0f14 72%);border:1px solid var(--ln)}
-.studio-visual{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;pointer-events:none;filter:contrast(1.03) saturate(1.03)}
+.studio-visual{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;pointer-events:none;filter:contrast(1.03) saturate(1.03);transition:opacity .28s}.studio-visual.live{opacity:0}
 .tb{position:absolute;left:12px;right:12px;top:12px;z-index:5;display:flex;flex-wrap:wrap;gap:6px;padding:8px;background:var(--p);backdrop-filter:blur(14px);border:1px solid var(--ln);border-radius:14px;align-items:center}
 .tb button{padding:6px 10px;font-size:13px}
 .tb i{width:1px;height:22px;background:var(--ln)}
@@ -58,6 +58,8 @@ dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:1
 .tbl td,.tbl th{padding:11px 12px;border-bottom:1px solid var(--ln);text-align:left;vertical-align:top}.tbl th{color:var(--mu);font-weight:600}
 .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin-top:14px}
 .cards .glass{margin:0}
+.exchange-state{margin:12px 0;padding:9px 11px;border-left:3px solid var(--bl);border-radius:6px;background:rgba(77,163,255,.1);font-size:13px}
+.notice{position:fixed;right:18px;bottom:18px;z-index:40;max-width:min(380px,calc(100vw - 36px));padding:11px 14px;border:1px solid rgba(95,211,154,.55);border-radius:10px;background:rgba(13,25,20,.96);color:#dff8ea;box-shadow:0 12px 30px rgba(0,0,0,.28);transform:translateY(16px);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}.notice.on{opacity:1;transform:none}
 footer{padding:4vw 5vw;color:var(--mu);font-size:13px}
 @media(max-width:900px){.hero,.studio{grid-template-columns:1fr}.stage{height:500px}nav a{margin-left:14px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
@@ -108,6 +110,7 @@ footer{padding:4vw 5vw;color:var(--mu);font-size:13px}
 </section>
 
 <footer>Laptop Lab is a simulation. Specifications, compatibility rules and any estimates are simplified illustrations, not benchmark results or manufacturer data.</footer>
+<div class="notice" id="notice" role="status" aria-live="polite"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
@@ -119,6 +122,8 @@ const WIFI=['Wi-Fi 5 AC 9260','Wi-Fi 6 AX200','Wi-Fi 6E AX210','Wi-Fi 7 BE200'];
 const COOL=['Single fan, 2 heat pipes','Dual fan, 4 heat pipes','Vapor chamber, dual fan'];
 const DEF={cpu:'Intel Core i5-13500H',gpu:'NVIDIA RTX 4050 6GB',ram:16,ssd:512,hdd:1000,bat:70,wifi:1,cool:1,disp:'QHD 165 Hz'};
 let cfg={...DEF};
+let noticeTimer;
+function notify(message){const n=$('#notice');n.textContent=message;n.classList.add('on');clearTimeout(noticeTimer);noticeTimer=setTimeout(()=>n.classList.remove('on'),3200)}
 const CPU=['Intel Core i3-1315U','Intel Core i5-13500H','Intel Core i7-13700H','Intel Core i9-13900H','AMD Ryzen 5 7640HS','AMD Ryzen 7 7840HS','AMD Ryzen 9 7940HS'];
 const GPU=['Intel UHD (integrated)','AMD Radeon 780M (integrated)','NVIDIA RTX 4050 6GB','NVIDIA RTX 4060 8GB','NVIDIA RTX 4070 8GB'];
 const OPT={
@@ -219,8 +224,10 @@ try{
  H=stage($('#hc'),$('#hl'));T=stage($('#sc'),$('#sl'));
 }catch(e){fail($('#hl'),'The 3D engine failed to load. Check your connection and reload.');fail($('#sl'),'The 3D engine failed to load. Check your connection and reload.')}
 
-const S={th:.6,ph:1.1,rd:10,tth:.6,tph:1.1,trd:10,sel:null,inn:true,e:0,et:0,lid:1.83,lidT:1.83};
+const S={th:.6,ph:1.1,rd:10,tth:.6,tph:1.1,trd:10,sel:null,inn:true,e:0,et:0,lid:1.83,lidT:1.83,active:false};
 let builds=[];
+try{builds=JSON.parse(localStorage.getItem('laptop-lab-builds')||'[]');if(!Array.isArray(builds))builds=[]}catch(e){builds=[]}
+function persistBuilds(){try{localStorage.setItem('laptop-lab-builds',JSON.stringify(builds.slice(0,12)))}catch(e){/* Saving remains available for this visit if storage is unavailable. */}}
 const SAMPLES=[
  {name:'Student starter (sample)',cfg:{...DEF,cpu:'Intel Core i3-1315U',gpu:'Intel UHD (integrated)',ram:8,ssd:256,hdd:0,bat:60,cool:0,disp:'FHD 60 Hz'}},
  {name:'Creator rig (sample)',cfg:{...DEF,cpu:'Intel Core i9-13900H',gpu:'NVIDIA RTX 4070 8GB',ram:32,ssd:1000,hdd:0,bat:80,wifi:2,cool:2,disp:'4K 60 Hz'}}];
@@ -234,7 +241,7 @@ function renderPlatform(){
  $('#platform').innerHTML='<label for="cpuPick">Processor</label><select id="cpuPick">'+CPU.map(v=>`<option ${v===cfg.cpu?'selected':''}>${v}</option>`).join('')+'</select><label for="gpuPick">Graphics</label><select id="gpuPick">'+GPU.map(v=>`<option ${v===cfg.gpu?'selected':''}>${v}</option>`).join('')+'<small>Platform changes update the active configuration and the live studio readout. CPU and GPU packages are soldered beneath the cooling system.</small>'}
 function renderCards(){
  const all=[...builds,...SAMPLES];
- $('#cards').innerHTML=all.map((b,i)=>`<div class="glass"><h3>${b.name}</h3><p class="mu">${b.cfg.ram} GB RAM · ${GB(b.cfg.ssd)} SSD${b.cfg.hdd?' + HDD':''}<br>${b.cfg.gpu}</p><button data-load="${i}">Load in studio</button></div>`).join('')}
+ $('#cards').innerHTML=all.map((b,i)=>`<div class="glass"><h3>${b.name}</h3><p class="mu">${b.cfg.ram} GB RAM · ${GB(b.cfg.ssd)} SSD${b.cfg.hdd?' + '+GB(b.cfg.hdd)+' HDD':''}<br>${b.cfg.gpu}</p><button data-load="${i}">Load in studio</button></div>`).join('')}
 function renderList(){
  $('#plist').innerHTML=ORDER.map(id=>{const i=I[id],e=id==='hdd'&&!cfg.hdd;return `<button data-id="${id}" aria-pressed="${S.sel===id}">${i[0]}<small>${e?'Empty bay':KIND[i[1]].split(' ')[0]}</small></button>`}).join('')}
 function panel(){
@@ -244,15 +251,16 @@ function panel(){
  let h=`<h3>${nm}</h3><span class="tag ${kind}">${KIND[kind]}</span><p class="spec">${sp()}</p><p class="mu">${tx}</p>`;
  if(kind==='rem'){
   const k=KEY[id],o=OPT[k],empty=id==='hdd'&&cfg.hdd===0;
-  if(!u.removed&&!empty)h+='<button class="pri" data-a="rm">Remove component</button>';
+ if(!u.removed&&!empty)h+='<button class="pri" data-a="rm">Remove for exchange</button><p class="mu" style="font-size:12px;margin-top:8px">This simulates disconnecting the part and opening its slot.</p>';
   else{
-   h+='<p class="mu">The slot is empty. Choose a replacement:</p><div class="opts">'+o.v.map(v=>{const b=block(k,v);return `<button data-a="ins" data-v="${v}" ${b?'disabled':''}>${o.l(v)}${b?'<small>'+b+'</small>':''}${!b&&v===cfg[k]&&!empty?'<small style="color:var(--mu)">Same as before</small>':''}</button>`}).join('')+'</div>';
-   if(!empty)h+='<button data-a="back">Reinstall original</button>'}}
+   h+='<div class="exchange-state">Slot open — choose a compatible replacement to install.</div><div class="opts">'+o.v.map(v=>{const b=block(k,v);return `<button data-a="ins" data-v="${v}" ${b?'disabled':''}>Install ${o.l(v)}${b?'<small>'+b+'</small>':''}${!b&&v===cfg[k]&&!empty?'<small style="color:var(--mu)">Original specification</small>':''}</button>`}).join('')+'</div>';
+   if(!empty)h+='<button data-a="back">Cancel and reinstall original</button>'}}
  p.innerHTML=h}
 
 if(T){
  const C=T.L.C,cv=$('#sc'),bh=new THREE.BoxHelper(C.ram,0x4da3ff);bh.visible=false;T.sc.add(bh);
  const RV=new THREE.Vector3(0,1.3,.4);
+ const activateLive=()=>{S.active=true;$('#studioVisual').classList.add('live')};
  const updateStudioVisual=()=>{const im=$('#studioVisual');im.src=S.et?'assets/laptop-exploded-v1.png':S.inn?'assets/laptop-internals-v1.png':'assets/laptop-exterior-v1.png';im.alt=S.et?'Photorealistic exploded laptop components':S.inn?'Photorealistic laptop internal hardware':'Photorealistic open Laptop Lab laptop'};
  const setInn=b=>{S.inn=b;$('#tView').textContent=b?'Exterior view':'Internal view';$('#tView').setAttribute('aria-pressed',b);updateStudioVisual()};
  const setExp=b=>{S.et=b?1:0;$('#tExp').textContent=b?'Assemble':'Exploded view';$('#tExp').setAttribute('aria-pressed',b);updateStudioVisual()};
@@ -264,6 +272,7 @@ if(T){
   const sy=.7+(cfg.bat-45)/54*.6;C.battery.scale.y=sy;C.battery.userData.home.y=-.09+.06*sy;
   renderCfg();renderList();panel()}
  function select(id,list){
+  if(id)activateLive();
   S.sel=id;
   if(id&&list&&!S.e&&!S.et){
    const deck=id==='keyboard'||id==='trackpad',top=['display','chassis','ports'].includes(id);
@@ -282,32 +291,33 @@ if(T){
   const h=rc.intersectObjects(ms,false)[0];
   if(h){let o=h.object;while(o&&!o.userData.id)o=o.parent;select(o.userData.id)}else select(null)}
  let dn=null;
- cv.addEventListener('pointerdown',e=>{dn={px:e.clientX,py:e.clientY,m:0};cv.setPointerCapture(e.pointerId);cv.style.cursor='grabbing'});
+ cv.addEventListener('pointerdown',e=>{activateLive();dn={px:e.clientX,py:e.clientY,m:0};cv.setPointerCapture(e.pointerId);cv.style.cursor='grabbing'});
  cv.addEventListener('pointermove',e=>{if(!dn)return;const dx=e.clientX-dn.px,dy=e.clientY-dn.py;dn.px=e.clientX;dn.py=e.clientY;dn.m+=Math.abs(dx)+Math.abs(dy);S.tth-=dx*.008;S.tph=clamp(S.tph-dy*.006,.1,1.52)});
  cv.addEventListener('pointerup',e=>{cv.style.cursor='grab';if(dn&&dn.m<5)pick(e);dn=null});
- cv.addEventListener('wheel',e=>{e.preventDefault();S.trd=clamp(S.trd*(1+e.deltaY*.001),4,16)},{passive:false});
- $('#zi').onclick=()=>S.trd=clamp(S.trd*.85,4,16);$('#zo').onclick=()=>S.trd=clamp(S.trd*1.18,4,16);
+ cv.addEventListener('wheel',e=>{activateLive();e.preventDefault();S.trd=clamp(S.trd*(1+e.deltaY*.001),4,16)},{passive:false});
+ $('#zi').onclick=()=>{activateLive();S.trd=clamp(S.trd*.85,4,16)};$('#zo').onclick=()=>{activateLive();S.trd=clamp(S.trd*1.18,4,16)};
  const VW={f:[0,1.25,9],t:[0,.12,10],s:[-Math.PI/2,1.45,9.5],r:[Math.PI,1.3,9],x:[.6,1.1,10]};
- document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>goView(...VW[b.dataset.v]));
- $('#tLid').onclick=()=>setLid(S.lidT>.2?0:1.83);
- $('#lid').oninput=e=>setLid(e.target.value*Math.PI/180);
- $('#tView').onclick=()=>setInn(!S.inn);
- $('#tExp').onclick=()=>setExp(!S.et);
+ document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{activateLive();goView(...VW[b.dataset.v])});
+ $('#tLid').onclick=()=>{activateLive();setLid(S.lidT>.2?0:1.83)};
+ $('#lid').oninput=e=>{activateLive();setLid(e.target.value*Math.PI/180)};
+ $('#tView').onclick=()=>{activateLive();setInn(!S.inn)};
+ $('#tExp').onclick=()=>{activateLive();setExp(!S.et)};
  $('#plist').onclick=e=>{const b=e.target.closest('[data-id]');if(b)select(b.dataset.id,true)};
+ const oLabel=(id,v)=>OPT[KEY[id]].l(v);
  $('#panel').onclick=e=>{
   const b=e.target.closest('[data-a]');if(!b||!S.sel)return;
   const id=S.sel,g=C[id],u=g.userData,k=KEY[id],a=b.dataset.a;
-  if(a==='rm'){if(!S.e&&!S.et)setInn(true);u.removed=true;u.remT=1}
-  else if(a==='back'){u.removed=false;u.remT=0}
+  if(a==='rm'){if(!S.e&&!S.et)setInn(true);u.removed=true;u.remT=1;notify(I[id][0]+' removed. Choose a replacement for the open slot.')}
+  else if(a==='back'){u.removed=false;u.remT=0;notify('Original '+I[id][0]+' reinstalled.')}
   else if(a==='ins'){const v=Number(b.dataset.v),was=u.removed||!g.visible;cfg[k]=v;u.removed=false;
-   if(was){u.rem=1;if(v===0)u.rem=0}u.remT=0;if(!g.visible&&v>0)g.visible=true}
+   if(was){u.rem=1;if(v===0)u.rem=0}u.remT=0;if(!g.visible&&v>0)g.visible=true;notify(v===0?'Bay left empty.':'Installed '+oLabel(id,v)+'.')}
   apply();bh.setFromObject(g)};
- $('#bSave').onclick=()=>{builds.unshift({name:'Build '+(builds.length+1),cfg:{...cfg}});renderCards()};
+ $('#bSave').onclick=()=>{builds.unshift({name:'Saved build '+new Date().toLocaleDateString(undefined,{month:'short',day:'numeric'}),cfg:{...cfg}});persistBuilds();renderCards();notify('Build saved. You can load it from Recent configurations.')};
  $('#platform').onchange=e=>{if(e.target.id==='cpuPick')cfg.cpu=e.target.value;if(e.target.id==='gpuPick')cfg.gpu=e.target.value;if(!dedicated()&&cfg.cool>0)cfg.cool=0;apply();select('cpu')};
- $('#bReset').onclick=()=>{cfg={...DEF};Object.values(C).forEach(g=>{g.userData.removed=false;g.userData.remT=0});apply()};
+ $('#bReset').onclick=()=>{cfg={...DEF};Object.values(C).forEach(g=>{g.userData.removed=false;g.userData.remT=0});apply();notify('Build reset to the default configuration.')};
  $('#cards').onclick=e=>{const b=e.target.closest('[data-load]');if(!b)return;
-  cfg={...[...builds,...SAMPLES][b.dataset.load].cfg};Object.values(C).forEach(g=>{g.userData.removed=false;g.userData.remT=0});apply();
-  $('#studio').scrollIntoView()};
+  cfg={...[...builds,...SAMPLES][b.dataset.load].cfg};Object.values(C).forEach(g=>{g.userData.removed=false;g.userData.remT=0});apply();notify('Configuration loaded into the studio.');
+  $('#studio').scrollIntoView({behavior:'smooth'})};
  const go=()=>$('#studio').scrollIntoView();
  $('#bStart').onclick=()=>{go();setExp(false);select('ram',true)};
  $('#bExp').onclick=()=>{go();setInn(true);setExp(true)};
@@ -319,9 +329,9 @@ if(T){
    g.position.set(u.home.x+u.ex.x*S.e+RV.x*u.rem,u.home.y+u.ex.y*S.e+RV.y*u.rem,u.home.z+u.ex.z*S.e+RV.z*u.rem)});
   C.display.rotation.x=-S.lid;
   T.L.root.visible=false;T.L.photo.visible=false;
-  const photoMode=S.inn&&!S.e;
+  const photoMode=S.inn&&!S.e&&!S.active;
   T.L.photo.visible=photoMode;
-  ['ports','mobo','cpu','gpu','ram','ssd','hdd','battery','wifi','fan','heatpipes','speakers'].forEach(id=>C[id].visible=!photoMode);
+  ['ports','mobo','cpu','gpu','ram','ssd','hdd','battery','wifi','fan','heatpipes','speakers'].forEach(id=>C[id].visible=!photoMode&&(id!=='hdd'||cfg.hdd>0));
   C.keyboard.visible=C.trackpad.visible=!S.inn;
   bh.visible=false}}
 else{$('#panel').textContent='The 3D studio is unavailable in this browser.'}
