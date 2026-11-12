@@ -29,25 +29,6 @@ An interactive 3D laptop studio that runs in the browser. Open the lid, look ins
 **Builds**
 - Save a build, reset it, and reload any saved or sample build into the 3D view
 
-## Quick start
-
-No build step and no dependencies to install.
-
-```bash
-git clone https://github.com/<your-username>/laptop-lab.git
-cd laptop-lab
-```
-
-Open `index.html` in a modern browser (Chrome, Edge, Firefox or Safari with WebGL enabled). An internet connection is needed because the page loads three.js and the font from CDNs.
-
-To serve it locally instead:
-
-```bash
-npx serve .
-# or
-python3 -m http.server 8000
-```
-
 ## Controls
 
 | Action | Input |
