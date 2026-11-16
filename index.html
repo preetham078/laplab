@@ -20,7 +20,7 @@ p{margin:0 0 12px}.mu{color:var(--mu)}
 .cta button{padding:12px 22px;font-size:16px}
 .hv,.stage{position:relative;overflow:hidden;border-radius:18px}
 .hv{height:min(62vh,540px)}
-.hero-laptop{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:2}.hv canvas{opacity:0}.hv .ld{z-index:3}
+.hero-laptop{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:2;transition:opacity .3s ease}.hv canvas{position:relative;z-index:1}.hv .ld{z-index:3}
 canvas{display:block;width:100%;height:100%}
 .stage canvas{touch-action:none;cursor:grab}
 button{font:inherit;color:var(--tx);background:rgba(255,255,255,.07);border:1px solid var(--ln);border-radius:10px;padding:8px 14px;cursor:pointer;transition:background .15s,border-color .15s}
@@ -34,6 +34,7 @@ button[aria-pressed=true]{background:rgba(77,163,255,.24);border-color:var(--bl)
 .studio{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:16px;margin-top:16px}
 .stage{height:640px;background:radial-gradient(ellipse at 50% 40%,#1c2230,#0d0f14 72%);border:1px solid var(--ln)}
 .studio-visual{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;pointer-events:none;filter:contrast(1.03) saturate(1.03);transition:opacity .28s}.studio-visual.live{opacity:0}
+.webgl-ready .hero-laptop,.webgl-ready .studio-visual{opacity:0}
 .tb{position:absolute;left:12px;right:12px;top:12px;z-index:5;display:flex;flex-wrap:wrap;gap:6px;padding:8px;background:var(--p);backdrop-filter:blur(14px);border:1px solid var(--ln);border-radius:14px;align-items:center}
 .tb button{padding:6px 10px;font-size:13px}
 .tb i{width:1px;height:22px;background:var(--ln)}
@@ -210,11 +211,12 @@ function stage(cv,ld){
  const a=new THREE.DirectionalLight(0xffffff,.85);a.position.set(4,8,5);sc.add(a);
  const b=new THREE.DirectionalLight(0x4da3ff,.7);b.position.set(-6,3,-5);sc.add(b);
  const g=new THREE.GridHelper(18,36,0x2c3d5c,0x1a2231);g.position.y=-.14;sc.add(g,L.root);
- const o={r,sc,cam,L,on:true};
+ const o={r,sc,cam,L,on:true,ld,ready:false};
  const rs=()=>{const w=cv.clientWidth,h=cv.clientHeight;if(!w||!h)return;r.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix()};
  new ResizeObserver(rs).observe(cv);rs();
  new IntersectionObserver(e=>{o.on=e[0].isIntersecting}).observe(cv);
- ld.classList.add('off');return o}
+ return o}
+function reveal3D(o){if(o.ready)return;o.ready=true;o.ld.classList.add('off');o.r.domElement.parentElement.classList.add('webgl-ready')}
 const place=(c,s)=>{c.position.set(Math.sin(s.ph)*Math.sin(s.th)*s.rd,.5+Math.cos(s.ph)*s.rd,Math.sin(s.ph)*Math.cos(s.th)*s.rd);c.lookAt(0,.5,0)};
 const still=matchMedia('(prefers-reduced-motion:reduce)').matches;
 
@@ -342,8 +344,8 @@ let hl=still?1.83:0;
  requestAnimationFrame(loop);
  if(H&&H.on){hl+=((t>500||still?1.83:0)-hl)*.04;H.L.C.display.rotation.x=-hl;
   H.L.root.rotation.y=still?-.3:Math.sin(t/2800)*.5-.3;H.L.rot.forEach(r=>r.rotation.y+=.05);
-  place(H.cam,{th:.35,ph:1.1,rd:11.5});H.r.render(H.sc,H.cam)}
- if(T&&T.on){T.step();T.L.rot.forEach(r=>r.rotation.y+=.05);T.r.render(T.sc,T.cam)}
+  place(H.cam,{th:.35,ph:1.1,rd:11.5});H.r.render(H.sc,H.cam);reveal3D(H)}
+ if(T&&T.on){T.step();T.L.rot.forEach(r=>r.rotation.y+=.05);T.r.render(T.sc,T.cam);reveal3D(T)}
 })(0);
 })();
 </script>
